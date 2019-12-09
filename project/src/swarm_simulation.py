@@ -46,45 +46,18 @@ class World():
         wallId = p.loadSDF("../models/walls.sdf")[0]
         p.resetBasePositionAndOrientation(wallId, [2., -2., 0], (0., 0., 0., 1.))
 
-        # tube
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-1., 5., 0], (0., 0., 0., 1.))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-1., 6., 0], (0., 0., 0., 1.))
-
-        # #arena
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-2, 4., 0], (0., 0., 0.5, 0.5))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-2., 7., 0], (0., 0., 0.5, 0.5))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-2., 9., 0], (0., 0., 0.5, 0.5))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-2., 11., 0], (0., 0., 0.5, 0.5))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-2., 13., 0], (0., 0., 0.5, 0.5))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-3., 3., 0], (0., 0., 0., 1.))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-5., 3., 0], (0., 0., 0., 1.))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-7., 3., 0], (0., 0., 0., 1.))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-8, 4., 0], (0., 0., 0.5, 0.5))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-8., 6., 0], (0., 0., 0.5, 0.5))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-8., 8., 0], (0., 0., 0.5, 0.5))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-8., 10., 0], (0., 0., 0.5, 0.5))
-        # wallId = p.loadSDF("../models/walls.sdf")[0]
-        # p.resetBasePositionAndOrientation(wallId, [-8., 12., 0], (0., 0., 0.5, 0.5))
+        # define initial configuration
+        init_dis = 1
+        init_bias = 1
+        row = 2
+        column = 3
 
         # create 6 robots
         self.robots = []
-        for (i, j) in itertools.product(range(1), range(1)):
-            self.robots.append(Robot([1. * i + 0.5, 1. * j - 0.5, 0.3], 2*i+j, self.dt))
-            # p.stepSimulation()
+        for (i, j) in itertools.product(range(row), range(column)):
+            self.robots.append(
+                Robot([init_dis*i+init_bias, init_dis*j-init_bias, 0.3], column*i+j, self.dt))
+
         self.time = 0.0
 
         self.stepSimulation()
@@ -108,6 +81,7 @@ class World():
             r.neighbors = []  # reset neighbors
             r.messages_received = []  # reset message received
             pos1, or1 = r.get_pos_and_orientation()
+            print(r.id, pos1)
             for j, r2 in enumerate(self.robots):
                 if(r.id != r2.id):
                     pos2, or2 = r2.get_pos_and_orientation()
@@ -124,7 +98,8 @@ class World():
         # update the controllers
         if self.time > 1.0:
             for r in self.robots:
-                r.compute_controller()
+                dx, dy = r.compute_controller()
+                print('force', r.id, dx, dy)
 
         # do one simulation step
         p.stepSimulation()

@@ -1,6 +1,8 @@
 import numpy as np
 import pybullet as p
 import itertools
+from pdb import set_trace
+import math
 
 
 class Robot():
@@ -92,12 +94,11 @@ class Robot():
         dx = 0.
         dy = 0.
         if messages:
-            for m in messages:
-                dx += m[1][0] - pos[0]
-                dy += m[1][1] - pos[1]
-            # integrate
-            des_pos_x = pos[0] + self.dt * dx
-            des_pos_y = pos[1] + self.dt * dy
+            # messages = [msg1, msg2, msg3]
+            # msg = [id, array([x, y, z]) ]
+
+            # Square Formation
+            dx, dy = self.formation(messages, pos, type="square")
 
             # compute velocity change for the wheels
             vel_norm = np.linalg.norm([dx, dy])  # norm of desired velocity
@@ -107,3 +108,50 @@ class Robot():
             right_wheel = np.sin(des_theta-rot)*vel_norm + np.cos(des_theta-rot)*vel_norm
             left_wheel = -np.sin(des_theta-rot)*vel_norm + np.cos(des_theta-rot)*vel_norm
             self.set_wheel_velocity([left_wheel, right_wheel])
+
+        return dx, dy
+
+    def formation(self, msgs, r_pos, type="square"):
+        dx = 0
+        dy = 0
+        # Square Formation
+        if type == "square":
+            des_coord = np.array([[0, -0.5], [0.5, -0.5 + 1/4], [0, 0.5],
+                                  [1, -0.5], [0.5, 0.5 - 1/4], [1, 0.5]])
+
+        # Circle Formation
+        if type == "circle":
+            des_coord = np.array([[-0.5, -math.sqrt(3)/2], [-1, 0], [-0.5, math.sqrt(3)/2],
+                                  [0.5, -math.sqrt(3)/2], [1, 0], [0.5, math.sqrt(3)/2]])
+
+        for msg in msgs:
+            n_id = msg[0]
+            n_pos = msg[1]
+
+            des_x, des_y = des_coord[self.id] - des_coord[n_id]
+            l_x, l_y, _ = r_pos - n_pos
+
+            # Collision Avoidance
+            if math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2)) <= 0.3:
+                return -5, -5
+
+            x_r, y_r, _ = r_pos
+            x_n, y_n, _ = n_pos
+            dx = dx - self.square_formation_control(des_x, l_x, x_r, x_n)
+            dy = dy - self.square_formation_control(des_y, l_y, y_r, y_n)
+
+        lim = 50
+        # Clip velocity
+        dx = np.clip(dx, -lim, lim)
+        dy = np.clip(dy, -lim, lim)
+
+        return dx, dy
+
+    def square_formation_control(self, d, l, x_r, x_n):
+        delta = 2
+        nmrtr = 2*(delta - math.fabs(d)) - math.fabs(l-d)
+        dnmntr = delta - math.fabs(d) - math.fabs(l-d)
+        dnmntr = math.pow(dnmntr, 2)
+        alpha = x_r - x_n - d
+
+        return (nmrtr/dnmntr) * alpha
