@@ -1,6 +1,7 @@
 import numpy as np
 import pybullet as p
 import itertools
+import keyboard
 
 from robot import Robot
 
@@ -59,6 +60,7 @@ class World():
                 Robot([init_dis*i+init_bias, init_dis*j-init_bias, 0.3], column*i+j, self.dt))
 
         self.time = 0.0
+        self.type = "s"
 
         self.stepSimulation()
         self.stepSimulation()
@@ -98,8 +100,10 @@ class World():
         # update the controllers
         if self.time > 1.0:
             for r in self.robots:
-                dx, dy = r.compute_controller()
-                print('force', r.id, dx, dy)
+                if keyboard.is_pressed('c'):
+                    print('You Pressed A Key!')
+                    self.type = "c"
+                dx, dy = r.compute_controller(self.type)
 
         # do one simulation step
         p.stepSimulation()

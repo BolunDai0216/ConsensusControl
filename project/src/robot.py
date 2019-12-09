@@ -71,7 +71,7 @@ class Robot():
         """
         return self.neighbors
 
-    def compute_controller(self):
+    def compute_controller(self, type="s"):
         """
         function that will be called each control cycle which implements the control law
         TO BE MODIFIED
@@ -98,7 +98,10 @@ class Robot():
             # msg = [id, array([x, y, z]) ]
 
             # Square Formation
-            dx, dy = self.formation(messages, pos, type="square")
+            if type == "s":
+                dx, dy = self.formation(messages, pos, type="square")
+            elif type == "c":
+                dx, dy = self.formation(messages, pos, type="circle")
 
             # compute velocity change for the wheels
             vel_norm = np.linalg.norm([dx, dy])  # norm of desired velocity
@@ -132,8 +135,9 @@ class Robot():
             l_x, l_y, _ = r_pos - n_pos
 
             # Collision Avoidance
-            if math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2)) <= 0.3:
-                return -5, -5
+            if math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2)) <= 0.4:
+                K = 100
+                return K*l_x, K*l_y
 
             x_r, y_r, _ = r_pos
             x_n, y_n, _ = n_pos
