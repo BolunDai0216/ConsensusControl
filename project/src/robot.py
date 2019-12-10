@@ -102,6 +102,12 @@ class Robot():
                 dx, dy = self.formation(messages, pos, type="square")
             elif type == "c":
                 dx, dy = self.formation(messages, pos, type="circle")
+            elif type == "l":
+                dx, dy = self.formation(messages, pos, type="line")
+            elif type == "o":
+                dx, dy = self.formation(messages, pos, type="out")
+            elif type == "f":
+                dx, dy = self.formation(messages, pos, type="further")
 
             # compute velocity change for the wheels
             vel_norm = np.linalg.norm([dx, dy])  # norm of desired velocity
@@ -126,6 +132,24 @@ class Robot():
         if type == "circle":
             des_coord = np.array([[-0.5, -math.sqrt(3)/2], [-1, 0], [-0.5, math.sqrt(3)/2],
                                   [0.5, -math.sqrt(3)/2], [1, 0], [0.5, math.sqrt(3)/2]])
+
+        # line Formation
+        if type == "line":
+            des_coord = np.array([[0.5, -1.25], [0.5, -0.25], [0.5, 0.75],
+                                  [0.5, -0.75], [0.5, 0.25], [0.5, 1.25], [0.5, 0]])
+            msgs.append([6, np.array([2.7, 0, 0.3])])
+
+        # move out of the walls
+        if type == "out":
+            des_coord = np.array([[0.5, -1.25], [0.5, -0.25], [0.5, 0.75],
+                                  [0.5, -0.75], [0.5, 0.25], [0.5, 1.25], [0.5, 0]])
+            msgs.append([6, np.array([2.7, 2, 0.3])])
+
+        # move out further
+        if type == "further":
+            des_coord = np.array([[0.5, -1.25], [0.5, -0.25], [0.5, 0.75],
+                                  [0.5, -0.75], [0.5, 0.25], [0.5, 1.25], [0.5, 0]])
+            msgs.append([6, np.array([2.7, 4, 0.3])])
 
         for msg in msgs:
             n_id = msg[0]

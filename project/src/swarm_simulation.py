@@ -27,7 +27,7 @@ class World():
 
         # the balls
         self.ball1 = p.loadURDF("../models/ball1.urdf")  # purple
-        p.resetBasePositionAndOrientation(self.ball1, [2., 4., 0.5], (0., 0., 0.5, 0.5))
+        p.resetBasePositionAndOrientation(self.ball1, [1., 4., 0.5], (0., 0., 0.5, 0.5))
         self.ball2 = p.loadURDF("../models/ball2.urdf")  # red
         p.resetBasePositionAndOrientation(self.ball2, [4., 2., 0.5], (0., 0., 0.5, 0.5))
 
@@ -83,7 +83,6 @@ class World():
             r.neighbors = []  # reset neighbors
             r.messages_received = []  # reset message received
             pos1, or1 = r.get_pos_and_orientation()
-            print(r.id, pos1)
             for j, r2 in enumerate(self.robots):
                 if(r.id != r2.id):
                     pos2, or2 = r2.get_pos_and_orientation()
@@ -101,8 +100,20 @@ class World():
         if self.time > 1.0:
             for r in self.robots:
                 if keyboard.is_pressed('c'):
-                    print('You Pressed A Key!')
+                    print('Circular Formation')
                     self.type = "c"
+                elif keyboard.is_pressed('s'):
+                    print('Square Formation')
+                    self.type = "s"
+                elif keyboard.is_pressed('l'):
+                    print('Line Formation')
+                    self.type = "l"
+                elif keyboard.is_pressed('o'):
+                    print('Moving Out')
+                    self.type = "o"
+                elif keyboard.is_pressed('f'):
+                    print('Moving Out Further')
+                    self.type = "f"
                 dx, dy = r.compute_controller(self.type)
 
         # do one simulation step
