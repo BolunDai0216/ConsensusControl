@@ -3,6 +3,8 @@ import pybullet as p
 import itertools
 from pdb import set_trace
 import math
+from utils import potential_room
+from utils import virtual_leader
 
 
 class Robot():
@@ -97,7 +99,7 @@ class Robot():
             # messages = [msg1, msg2, msg3]
             # msg = [id, array([x, y, z]) ]
 
-            # Square Formation
+            # Type defaults to s
             if type == "s":
                 dx, dy = self.formation(messages, pos, type="square")
             elif type == "c":
@@ -108,6 +110,8 @@ class Robot():
                 dx, dy = self.formation(messages, pos, type="out")
             elif type == "f":
                 dx, dy = self.formation(messages, pos, type="further")
+            elif type == "v":
+                dx, dy = self.formation(messages, pos, type="leader")
 
             # compute velocity change for the wheels
             vel_norm = np.linalg.norm([dx, dy])  # norm of desired velocity
@@ -151,22 +155,35 @@ class Robot():
                                   [0.5, -0.75], [0.5, 0.25], [0.5, 1.25], [0.5, 0]])
             msgs.append([6, np.array([2.7, 4, 0.3])])
 
-        for msg in msgs:
-            n_id = msg[0]
-            n_pos = msg[1]
+        if type == "leader":
+            x, y, z = r_pos
+            field, dx, dy = virtual_leader(x, y, 4, 4)
+            for msg in msgs:
+                n_id = msg[0]
+                n_pos = msg[1]
+                l_x, l_y, _ = r_pos - n_pos
 
-            des_x, des_y = des_coord[self.id] - des_coord[n_id]
-            l_x, l_y, _ = r_pos - n_pos
+                # Collision Avoidance
+                if math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2)) <= 0.4:
+                    K = 100
+                    return K*l_x, K*l_y
+        else:
+            for msg in msgs:
+                n_id = msg[0]
+                n_pos = msg[1]
 
-            # Collision Avoidance
-            if math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2)) <= 0.4:
-                K = 100
-                return K*l_x, K*l_y
+                des_x, des_y = des_coord[self.id] - des_coord[n_id]
+                l_x, l_y, _ = r_pos - n_pos
 
-            x_r, y_r, _ = r_pos
-            x_n, y_n, _ = n_pos
-            dx = dx - self.square_formation_control(des_x, l_x, x_r, x_n)
-            dy = dy - self.square_formation_control(des_y, l_y, y_r, y_n)
+                # Collision Avoidance
+                if math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2)) <= 0.4:
+                    K = 100
+                    return K*l_x, K*l_y
+
+                x_r, y_r, _ = r_pos
+                x_n, y_n, _ = n_pos
+                dx = dx - self.square_formation_control(des_x, l_x, x_r, x_n)
+                dy = dy - self.square_formation_control(des_y, l_y, y_r, y_n)
 
         lim = 50
         # Clip velocity

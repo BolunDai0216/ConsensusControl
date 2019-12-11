@@ -26,10 +26,14 @@ class World():
         self.goalId = p.loadURDF("../models/goal2.urdf")  # purple
 
         # the balls
+        # self.ball1 = p.loadURDF("../models/ball1.urdf")  # purple
+        # p.resetBasePositionAndOrientation(self.ball1, [1., 4., 0.5], (0., 0., 0.5, 0.5))
+        # self.ball2 = p.loadURDF("../models/ball2.urdf")  # red
+        # p.resetBasePositionAndOrientation(self.ball2, [4., 2., 0.5], (0., 0., 0.5, 0.5))
+
+        # Virtual Leader Position
         self.ball1 = p.loadURDF("../models/ball1.urdf")  # purple
-        p.resetBasePositionAndOrientation(self.ball1, [1., 4., 0.5], (0., 0., 0.5, 0.5))
-        self.ball2 = p.loadURDF("../models/ball2.urdf")  # red
-        p.resetBasePositionAndOrientation(self.ball2, [4., 2., 0.5], (0., 0., 0.5, 0.5))
+        p.resetBasePositionAndOrientation(self.ball1, [4., 4., 0.5], (0., 0., 0.5, 0.5))
 
         p.resetDebugVisualizerCamera(7.0, 90.0, -43.0, (1., 1., 0.0))
 
@@ -58,9 +62,11 @@ class World():
         for (i, j) in itertools.product(range(row), range(column)):
             self.robots.append(
                 Robot([init_dis*i+init_bias, init_dis*j-init_bias, 0.3], column*i+j, self.dt))
+            # self.robots.append(
+            #     Robot([2, -1, 0.3], column*i+j, self.dt))
 
         self.time = 0.0
-        self.type = "s"
+        self.type = "v"
 
         self.stepSimulation()
         self.stepSimulation()
@@ -114,6 +120,9 @@ class World():
                 elif keyboard.is_pressed('f'):
                     print('Moving Out Further')
                     self.type = "f"
+                elif keyboard.is_pressed('v'):
+                    print('Virtual Leader')
+                    self.type = "v"
                 dx, dy = r.compute_controller(self.type)
 
         # do one simulation step
