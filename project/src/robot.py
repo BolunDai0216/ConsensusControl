@@ -105,13 +105,9 @@ class Robot():
             elif type == "c":
                 dx, dy = self.formation(messages, pos, type="circle")
             elif type == "l":
-                dx, dy = self.formation(messages, pos, type="line")
-            elif type == "o":
-                dx, dy = self.formation(messages, pos, type="out")
-            elif type == "f":
-                dx, dy = self.formation(messages, pos, type="further")
-            elif type == "v":
                 dx, dy = self.formation(messages, pos, type="leader")
+            elif type == "d":
+                dx, dy = self.formation(messages, pos, type="line")
 
             # compute velocity change for the wheels
             vel_norm = np.linalg.norm([dx, dy])  # norm of desired velocity
@@ -127,6 +123,7 @@ class Robot():
     def formation(self, msgs, r_pos, type="square"):
         dx = 0
         dy = 0
+        collision = False
         # Square Formation
         if type == "square":
             des_coord = np.array([[0, -0.5], [0.5, -0.5 + 1/4], [0, 0.5],
@@ -143,30 +140,22 @@ class Robot():
                                   [0.5, -0.75], [0.5, 0.25], [0.5, 1.25], [0.5, 0]])
             msgs.append([6, np.array([2.7, 0, 0.3])])
 
-        # move out of the walls
-        if type == "out":
-            des_coord = np.array([[0.5, -1.25], [0.5, -0.25], [0.5, 0.75],
-                                  [0.5, -0.75], [0.5, 0.25], [0.5, 1.25], [0.5, 0]])
-            msgs.append([6, np.array([2.7, 2, 0.3])])
-
-        # move out further
-        if type == "further":
-            des_coord = np.array([[0.5, -1.25], [0.5, -0.25], [0.5, 0.75],
-                                  [0.5, -0.75], [0.5, 0.25], [0.5, 1.25], [0.5, 0]])
-            msgs.append([6, np.array([2.7, 4, 0.3])])
-
         if type == "leader":
             x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 4, 4)
+            field, dx, dy = virtual_leader(x, y, 5, 5)
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
                 l_x, l_y, _ = r_pos - n_pos
+                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
+                if dis <= 0.4:
+                    nxt_x = x + dx * 1./250.
+                    nxt_y = y + dy * 1./250.
+                    nxt_l_x = nxt_x - n_pos[0]
+                    nxt_l_y = nxt_y - n_pos[1]
+                    if math.sqrt(math.pow(nxt_l_x, 2) + math.pow(nxt_l_y, 2)) < 0.3:
+                        return 0.1*dx, 0.1*dx
 
-                # Collision Avoidance
-                if math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2)) <= 0.4:
-                    K = 100
-                    return K*l_x, K*l_y
         else:
             for msg in msgs:
                 n_id = msg[0]
@@ -175,20 +164,27 @@ class Robot():
                 des_x, des_y = des_coord[self.id] - des_coord[n_id]
                 l_x, l_y, _ = r_pos - n_pos
 
-                # Collision Avoidance
-                if math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2)) <= 0.4:
-                    K = 100
-                    return K*l_x, K*l_y
-
                 x_r, y_r, _ = r_pos
                 x_n, y_n, _ = n_pos
                 dx = dx - self.square_formation_control(des_x, l_x, x_r, x_n)
                 dy = dy - self.square_formation_control(des_y, l_y, y_r, y_n)
 
+                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
+                if dis <= 0.4:
+                    nxt_x = x_r + dx * 1./250.
+                    nxt_y = y_r + dy * 1./250.
+                    nxt_l_x = nxt_x - n_pos[0]
+                    nxt_l_y = nxt_y - n_pos[1]
+                    if math.sqrt(math.pow(nxt_l_x, 2) + math.pow(nxt_l_y, 2)) < 0.3:
+                        collision = False
+
         lim = 50
         # Clip velocity
         dx = np.clip(dx, -lim, lim)
         dy = np.clip(dy, -lim, lim)
+
+        if collision:
+            return 0.1*dx, 0.1*dx
 
         return dx, dy
 

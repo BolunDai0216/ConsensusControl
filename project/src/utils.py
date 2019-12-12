@@ -88,11 +88,11 @@ def potential_field_wall(x, y, Wall):
         d_den = math.sqrt(t_den)
         d = d_num/d_den
         if Wall.orientation == 1:  # Veritcal Wall
-            dx = 0
+            dx = 1
             dy = potential_field_1d(d) * positivity(y - Wall.p1[1])
         elif Wall.orientation == 0:  # Horizontal Wall
             dx = potential_field_1d(d) * positivity(x - Wall.p1[0])
-            dy = 0
+            dy = 1
     else:
         d1 = math.pow((Wall.p2[0] - x), 2) + math.pow(Wall.p2[1] - y, 2)
         d2 = math.pow(Wall.p1[0] - x, 2) + math.pow(Wall.p1[1] - y, 2)
@@ -151,7 +151,7 @@ def virtual_leader(x, y, l_x, l_y):
     # _, _dx, _dy, _ = potential_field_wall(x, y, w)
     _, _dx, _dy = potential_room(x, y)
 
-    return field, dx+_dx, dy+_dy
+    return field, dx+3*_dx, dy+3*_dy
 
 
 def main():

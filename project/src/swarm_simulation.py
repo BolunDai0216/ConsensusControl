@@ -32,8 +32,8 @@ class World():
         # p.resetBasePositionAndOrientation(self.ball2, [4., 2., 0.5], (0., 0., 0.5, 0.5))
 
         # Virtual Leader Position
-        self.ball1 = p.loadURDF("../models/ball1.urdf")  # purple
-        p.resetBasePositionAndOrientation(self.ball1, [4., 4., 0.5], (0., 0., 0.5, 0.5))
+        # self.ball1 = p.loadURDF("../models/ball1.urdf")  # purple
+        # p.resetBasePositionAndOrientation(self.ball1, [5., 5., 0.5], (0., 0., 0.5, 0.5))
 
         p.resetDebugVisualizerCamera(7.0, 90.0, -43.0, (1., 1., 0.0))
 
@@ -66,7 +66,7 @@ class World():
             #     Robot([2, -1, 0.3], column*i+j, self.dt))
 
         self.time = 0.0
-        self.type = "v"
+        self.type = "s"
 
         self.stepSimulation()
         self.stepSimulation()
@@ -112,17 +112,11 @@ class World():
                     print('Square Formation')
                     self.type = "s"
                 elif keyboard.is_pressed('l'):
-                    print('Line Formation')
-                    self.type = "l"
-                elif keyboard.is_pressed('o'):
-                    print('Moving Out')
-                    self.type = "o"
-                elif keyboard.is_pressed('f'):
-                    print('Moving Out Further')
-                    self.type = "f"
-                elif keyboard.is_pressed('v'):
                     print('Virtual Leader')
-                    self.type = "v"
+                    self.type = "l"
+                elif keyboard.is_pressed('d'):
+                    print('Line Formation')
+                    self.type = "d"
                 dx, dy = r.compute_controller(self.type)
 
         # do one simulation step
