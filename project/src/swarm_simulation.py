@@ -113,6 +113,15 @@ class World():
                 elif keyboard.is_pressed('p'):
                     print('Purple')
                     self.type = "p"
+                elif keyboard.is_pressed('d'):
+                    print('Push Purple')
+                    self.type = "d"
+                elif keyboard.is_pressed('r'):
+                    print('Red')
+                    self.type = "r"
+                elif keyboard.is_pressed('b'):
+                    print('Big Circle')
+                    self.type = "b"
                 dx, dy = r.compute_controller(self.type)
 
         # do one simulation step

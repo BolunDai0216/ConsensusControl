@@ -7,6 +7,7 @@ from utils import potential_room
 from utils import virtual_leader
 from utils import positivity
 from utils import potential_field_1d_force
+from utils import virtual_obstacle
 
 
 class Robot():
@@ -22,6 +23,12 @@ class Robot():
         self.initial_position = init_pos
         self.reset()
 
+        self.purple_x = 1
+        self.purple_y = 4
+        self.red_x = 4
+        self.red_y = 2
+
+        self.switch = True
         # No friction between bbody and surface.
         p.changeDynamics(self.pybullet_id, -1, lateralFriction=5., rollingFriction=0.)
 
@@ -110,6 +117,12 @@ class Robot():
                 dx, dy = self.formation(messages, pos, type="leader")
             elif type == "p":
                 dx, dy = self.formation(messages, pos, type="purple")
+            elif type == "d":
+                dx, dy = self.formation(messages, pos, type="push purple")
+            elif type == "b":
+                dx, dy = self.formation(messages, pos, type="big circle")
+            elif type == "r":
+                dx, dy = self.formation(messages, pos, type="red")
 
             # compute velocity change for the wheels
             vel_norm = np.linalg.norm([dx, dy])  # norm of desired velocity
@@ -133,8 +146,9 @@ class Robot():
 
         # Circle Formation
         if type == "circle":
-            des_coord = np.array([[-0.5, -math.sqrt(3)/2], [-1, 0], [-0.5, math.sqrt(3)/2],
-                                  [0.5, -math.sqrt(3)/2], [1, 0], [0.5, math.sqrt(3)/2]])
+            des_coord = np.array([[-0.25, -math.sqrt(3)/4], [-0.5, 0], [-0.25, math.sqrt(3)/4],
+                                  [0.25, -math.sqrt(3)/4], [0.5, 0], [0.25, math.sqrt(3)/4]])
+        # Big Circle Formation
 
         if type == "leader":
             x, y, z = r_pos
@@ -153,13 +167,78 @@ class Robot():
                 dy += _dy
         elif type == "purple":
             x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 1, 4, alpha=60)
+            field, dx, dy = virtual_leader(x, y, self.purple_x, self.purple_y, alpha=60)
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
                 l_x, l_y, _ = n_pos - r_pos
                 dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=5, d_0=1)
+                u = potential_field_1d_force(dis, alpha=10, d_0=0.7)
+
+                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
+                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
+
+                dx += _dx
+                dy += _dy
+        elif type == "push purple":
+            x, y, z = r_pos
+            cx = 0
+            cy = 0
+            # des_xs = []
+            # des_ys = []
+            #
+            # L = np.diag(np.array([2, 2, 2, 2, 2, 2])) - np.ones((6, 6))
+
+            for msg in msgs:
+                n_id = msg[0]
+                n_pos = msg[1]
+                cx += n_pos[0]*1/6
+                cy += n_pos[1]*1/6
+            #     des_xs.append(n_pos[0] - x)
+            #     des_ys.append(n_pos[1] - y)
+            #
+            # if self.switch:
+            #     self.des_xs = des_xs
+            #     self.des_ys = des_ys
+            #     K = 10
+            #     dx = K * (2.5 - cx)
+            #     dy = K * (5.5 - cy)
+            #     self.switch = False
+            # else:
+            #
+            #     self.switch = True
+            cx += x/6
+            cy += y/6
+            dx = 10 * (2.5 - cx)
+            dy = 10 * (5.5 - cy)
+        elif type == "red":
+            x, y, z = r_pos
+            field, dx, dy = virtual_leader(x, y, self.red_x, self.red_y, alpha=60)
+            field, _dx, _dy = virtual_obstacle(x, y, self.purple_x, self.purple_y)
+            dx += _dx
+            dy += _dy
+
+            for msg in msgs:
+                n_id = msg[0]
+                n_pos = msg[1]
+                l_x, l_y, _ = n_pos - r_pos
+                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
+                u = potential_field_1d_force(dis, alpha=10, d_0=0.7)
+
+                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
+                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
+
+                dx += _dx
+                dy += _dy
+        elif type == "big circle":
+            x, y, z = r_pos
+            field, dx, dy = virtual_leader(x, y, 2.5, 5.5, alpha=60, d_0=1.5)
+            for msg in msgs:
+                n_id = msg[0]
+                n_pos = msg[1]
+                l_x, l_y, _ = n_pos - r_pos
+                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
+                u = potential_field_1d_force(dis, alpha=3, d_0=0.7)
 
                 _dx = u * math.fabs(l_x/dis) * positivity(l_x)
                 _dy = u * math.fabs(l_y/dis) * positivity(l_y)

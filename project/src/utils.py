@@ -67,6 +67,19 @@ def potential_field_1d_force(x, d_0=1, alpha=10, d_1=10, d_2=0.01):
     return u
 
 
+def rejection_field_1d_force(x, d_0=1, alpha=10, d_1=10, d_2=0.01):
+    d_0 = d_0
+    alpha = alpha
+    d_1 = d_1
+    d_2 = d_2
+
+    u = alpha*(1/x - d_0/math.pow(x, 2))
+    u = np.max([u, -100])
+    u = np.min([u, 0])
+
+    return u
+
+
 def positivity(x):
     if x >= 0:
         return 1
@@ -134,19 +147,35 @@ def potential_room(x, y):
     return field, dx, dy
 
 
-def virtual_leader(x, y, l_x, l_y, alpha=10):
+def virtual_leader(x, y, l_x, l_y, alpha=10, d_0=0.4):
     # negative field values pushes the agent away and positive field values
     # attracts the agent
     dis_x = l_x - x
     dis_y = l_y - y
     dis = math.sqrt(math.pow(dis_x, 2) + math.pow(dis_y, 2))
-    field = potential_field_1d_force(dis, alpha=alpha, d_0=0.4)
+    field = potential_field_1d_force(dis, alpha=alpha, d_0=d_0)
 
     dx = field * math.fabs(dis_x/dis) * positivity(l_x - x)
     dy = field * math.fabs(dis_y/dis) * positivity(l_y - y)
     _, _dx, _dy = potential_room(x, y)
 
     return field, dx+6*_dx, dy+6*_dy
+
+
+def virtual_obstacle(x, y, l_x, l_y):
+    dis_x = l_x - x
+    dis_y = l_y - y
+    dis = math.sqrt(math.pow(dis_x, 2) + math.pow(dis_y, 2))
+    field = rejection_field_1d_force(dis)
+
+    dx = field * math.fabs(dis_x/dis) * positivity(l_x - x)
+    dy = field * math.fabs(dis_y/dis) * positivity(l_y - y)
+    _, _dx, _dy = potential_room(x, y)
+
+    dx += _dx
+    dy += -dy
+
+    return field, dx, dy
 
 
 def main():
