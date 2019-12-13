@@ -5,6 +5,8 @@ from pdb import set_trace
 import math
 from utils import potential_room
 from utils import virtual_leader
+from utils import positivity
+from utils import potential_field_1d_force
 
 
 class Robot():
@@ -106,8 +108,8 @@ class Robot():
                 dx, dy = self.formation(messages, pos, type="circle")
             elif type == "l":
                 dx, dy = self.formation(messages, pos, type="leader")
-            elif type == "d":
-                dx, dy = self.formation(messages, pos, type="line")
+            elif type == "p":
+                dx, dy = self.formation(messages, pos, type="purple")
 
             # compute velocity change for the wheels
             vel_norm = np.linalg.norm([dx, dy])  # norm of desired velocity
@@ -126,36 +128,44 @@ class Robot():
         collision = False
         # Square Formation
         if type == "square":
-            des_coord = np.array([[0, -0.5], [0.5, -0.5 + 1/4], [0, 0.5],
-                                  [1, -0.5], [0.5, 0.5 - 1/4], [1, 0.5]])
+            des_coord = np.array([[0, -0.5], [0, 0], [0, 0.5],
+                                  [1, -0.5], [1, 0], [1, 0.5]])
 
         # Circle Formation
         if type == "circle":
             des_coord = np.array([[-0.5, -math.sqrt(3)/2], [-1, 0], [-0.5, math.sqrt(3)/2],
                                   [0.5, -math.sqrt(3)/2], [1, 0], [0.5, math.sqrt(3)/2]])
 
-        # line Formation
-        if type == "line":
-            des_coord = np.array([[0.5, -1.25], [0.5, -0.25], [0.5, 0.75],
-                                  [0.5, -0.75], [0.5, 0.25], [0.5, 1.25], [0.5, 0]])
-            msgs.append([6, np.array([2.7, 0, 0.3])])
-
         if type == "leader":
             x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 5, 5)
+            field, dx, dy = virtual_leader(x, y, 3, 3, alpha=20)
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
-                l_x, l_y, _ = r_pos - n_pos
+                l_x, l_y, _ = n_pos - r_pos
                 dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                if dis <= 0.4:
-                    nxt_x = x + dx * 1./250.
-                    nxt_y = y + dy * 1./250.
-                    nxt_l_x = nxt_x - n_pos[0]
-                    nxt_l_y = nxt_y - n_pos[1]
-                    if math.sqrt(math.pow(nxt_l_x, 2) + math.pow(nxt_l_y, 2)) < 0.3:
-                        return 0.1*dx, 0.1*dx
+                u = potential_field_1d_force(dis, alpha=5, d_0=1)
 
+                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
+                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
+
+                dx += _dx
+                dy += _dy
+        elif type == "purple":
+            x, y, z = r_pos
+            field, dx, dy = virtual_leader(x, y, 1, 4, alpha=60)
+            for msg in msgs:
+                n_id = msg[0]
+                n_pos = msg[1]
+                l_x, l_y, _ = n_pos - r_pos
+                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
+                u = potential_field_1d_force(dis, alpha=5, d_0=1)
+
+                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
+                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
+
+                dx += _dx
+                dy += _dy
         else:
             for msg in msgs:
                 n_id = msg[0]
@@ -178,7 +188,7 @@ class Robot():
                     if math.sqrt(math.pow(nxt_l_x, 2) + math.pow(nxt_l_y, 2)) < 0.3:
                         collision = False
 
-        lim = 50
+        lim = 200
         # Clip velocity
         dx = np.clip(dx, -lim, lim)
         dy = np.clip(dy, -lim, lim)

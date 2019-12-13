@@ -8,7 +8,7 @@ def plot_1d_field():
 
     for i in range(1000):
         tmp = (i+1)*0.01
-        power.append(potential_field_1d_force(tmp))
+        power.append(potential_field_1d_force(tmp, d_0=0.5))
         xs.append(tmp)
 
     return power, xs

@@ -62,7 +62,7 @@ def potential_field_1d_force(x, d_0=1, alpha=10, d_1=10, d_2=0.01):
     d_2 = d_2
 
     u = alpha*(1/x - d_0/math.pow(x, 2))
-    u = np.max([u, -5])
+    u = np.max([u, -100])
 
     return u
 
@@ -134,24 +134,19 @@ def potential_room(x, y):
     return field, dx, dy
 
 
-def virtual_leader(x, y, l_x, l_y):
+def virtual_leader(x, y, l_x, l_y, alpha=10):
     # negative field values pushes the agent away and positive field values
     # attracts the agent
     dis_x = l_x - x
     dis_y = l_y - y
     dis = math.sqrt(math.pow(dis_x, 2) + math.pow(dis_y, 2))
-    field = potential_field_1d_force(dis)
+    field = potential_field_1d_force(dis, alpha=alpha, d_0=0.4)
 
     dx = field * math.fabs(dis_x/dis) * positivity(l_x - x)
     dy = field * math.fabs(dis_y/dis) * positivity(l_y - y)
-
-    _dx = 0
-    _dy = 0
-    # w = Wall(0.5, 2, (3, 0))
-    # _, _dx, _dy, _ = potential_field_wall(x, y, w)
     _, _dx, _dy = potential_room(x, y)
 
-    return field, dx+3*_dx, dy+3*_dy
+    return field, dx+6*_dx, dy+6*_dy
 
 
 def main():

@@ -26,14 +26,10 @@ class World():
         self.goalId = p.loadURDF("../models/goal2.urdf")  # purple
 
         # the balls
-        # self.ball1 = p.loadURDF("../models/ball1.urdf")  # purple
-        # p.resetBasePositionAndOrientation(self.ball1, [1., 4., 0.5], (0., 0., 0.5, 0.5))
-        # self.ball2 = p.loadURDF("../models/ball2.urdf")  # red
-        # p.resetBasePositionAndOrientation(self.ball2, [4., 2., 0.5], (0., 0., 0.5, 0.5))
-
-        # Virtual Leader Position
-        # self.ball1 = p.loadURDF("../models/ball1.urdf")  # purple
-        # p.resetBasePositionAndOrientation(self.ball1, [5., 5., 0.5], (0., 0., 0.5, 0.5))
+        self.ball1 = p.loadURDF("../models/ball1.urdf")  # purple
+        p.resetBasePositionAndOrientation(self.ball1, [1., 4., 0.5], (0., 0., 0.5, 0.5))
+        self.ball2 = p.loadURDF("../models/ball2.urdf")  # red
+        p.resetBasePositionAndOrientation(self.ball2, [4., 2., 0.5], (0., 0., 0.5, 0.5))
 
         p.resetDebugVisualizerCamera(7.0, 90.0, -43.0, (1., 1., 0.0))
 
@@ -114,9 +110,9 @@ class World():
                 elif keyboard.is_pressed('l'):
                     print('Virtual Leader')
                     self.type = "l"
-                elif keyboard.is_pressed('d'):
-                    print('Line Formation')
-                    self.type = "d"
+                elif keyboard.is_pressed('p'):
+                    print('Purple')
+                    self.type = "p"
                 dx, dy = r.compute_controller(self.type)
 
         # do one simulation step
