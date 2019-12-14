@@ -163,8 +163,8 @@ class Robot():
 
         # Circle Formation
         if type == "diamond":
-            des_coord = np.array([[0, 0], [0, 2/3], [0, 4/3],
-                                  [0, 2], [1, 1], [1, -1]])
+            des_coord = np.array([[0, 0], [2/3, 0], [4/3, 0],
+                                  [2, 0], [1, 1], [1, -1]])
 
         if type == "leader":
             x, y, z = r_pos
@@ -293,6 +293,8 @@ class Robot():
                 dx += _dx
                 dy += _dy
         else:
+            dx = 0
+            dy = 0
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
@@ -306,15 +308,23 @@ class Robot():
                 dy = dy - self.square_formation_control(des_y, l_y, y_r, y_n)
 
                 dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                if dis <= 0.4:
-                    nxt_x = x_r + dx * 1./250.
-                    nxt_y = y_r + dy * 1./250.
-                    nxt_l_x = nxt_x - n_pos[0]
-                    nxt_l_y = nxt_y - n_pos[1]
-                    if math.sqrt(math.pow(nxt_l_x, 2) + math.pow(nxt_l_y, 2)) < 0.3:
-                        collision = False
+                u = potential_field_1d_force(dis, alpha=5, d_0=1)
 
-        lim = 200
+                _dx = u * math.fabs(l_x/dis) * positivity(-l_x)
+                _dy = u * math.fabs(l_y/dis) * positivity(-l_y)
+
+                dx += _dx
+                dy += _dy
+                # dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
+                # if dis <= 0.4:
+                #     nxt_x = x_r + dx * 1./250.
+                #     nxt_y = y_r + dy * 1./250.
+                #     nxt_l_x = nxt_x - n_pos[0]
+                #     nxt_l_y = nxt_y - n_pos[1]
+                #     if math.sqrt(math.pow(nxt_l_x, 2) + math.pow(nxt_l_y, 2)) < 0.3:
+                #         collision = True
+
+        lim = 50
         # Clip velocity
         dx = np.clip(dx, -lim, lim)
         dy = np.clip(dy, -lim, lim)

@@ -116,9 +116,9 @@ class World():
                 elif keyboard.is_pressed('p'):
                     print('Purple')
                     self.type = "p"
-                elif keyboard.is_pressed('d'):
+                elif keyboard.is_pressed('k'):
                     print('Push Purple')
-                    self.type = "d"
+                    self.type = "k"
                 elif keyboard.is_pressed('r'):
                     print('Red')
                     self.type = "r"

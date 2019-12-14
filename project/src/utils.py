@@ -206,34 +206,6 @@ def main():
     fig.colorbar(surf, shrink=0.5, aspect=5)
     plt.show()
 
-    # Wall distance
-    # wall = Wall(0.5, 2, (3, 0))
-    # fig = plt.figure()
-    # ax = fig.gca(projection='3d')
-    # X = np.arange(-5, 5, 0.25)
-    # Y = np.arange(-5, 5, 0.25)
-    # X, Y = np.meshgrid(X, Y)
-    # Z = np.zeros_like(X)
-    # for i in range(X.shape[1]):
-    #     for j in range(X.shape[0]):
-    #         _, Z[j][i], dy, _ = potential_field_wall(Y[i][j], X[i][j], wall)
-    #
-    # # Plot the surface.
-    # surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
-    #                        linewidth=0, antialiased=False)
-    #
-    # # Customize the z axis.
-    # ax.set_zlim(0, 10)
-    # ax.zaxis.set_major_locator(LinearLocator(10))
-    # ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-    # ax.set_xlabel('x')
-    # ax.set_ylabel('y')
-    # ax.set_zlabel('z')
-    #
-    # # Add a color bar which maps values to colors.
-    # fig.colorbar(surf, shrink=0.5, aspect=5)
-    # plt.show()
-
 
 if __name__ == "__main__":
     main()
