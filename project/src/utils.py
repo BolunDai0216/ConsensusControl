@@ -159,7 +159,7 @@ def virtual_leader(x, y, l_x, l_y, alpha=10, d_0=0.4):
     dy = field * math.fabs(dis_y/dis) * positivity(l_y - y)
     _, _dx, _dy = potential_room(x, y)
 
-    return field, dx+6*_dx, dy+6*_dy
+    return field, dx+7*_dx, dy+7*_dy
 
 
 def virtual_obstacle(x, y, l_x, l_y):

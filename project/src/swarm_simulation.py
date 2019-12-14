@@ -12,7 +12,7 @@ class World():
         self.physicsClient = p.connect(p.GUI)
         p.setGravity(0, 0, -9.81)
 
-        self.max_communication_distance = 2.0
+        self.max_communication_distance = 5.0
 
         # We will integrate every 4ms (250Hz update)
         self.dt = 1./250.
@@ -110,6 +110,9 @@ class World():
                 elif keyboard.is_pressed('l'):
                     print('Virtual Leader')
                     self.type = "l"
+                elif keyboard.is_pressed('e'):
+                    print('Virtual Leader 2')
+                    self.type = "e"
                 elif keyboard.is_pressed('p'):
                     print('Purple')
                     self.type = "p"
@@ -122,6 +125,15 @@ class World():
                 elif keyboard.is_pressed('b'):
                     print('Big Circle')
                     self.type = "b"
+                elif keyboard.is_pressed('t'):
+                    print('Push Red')
+                    self.type = "t"
+                elif keyboard.is_pressed('o'):
+                    print('Big circle')
+                    self.type = "o"
+                elif keyboard.is_pressed('d'):
+                    print('Diamond')
+                    self.type = "d"
                 dx, dy = r.compute_controller(self.type)
 
         # do one simulation step
