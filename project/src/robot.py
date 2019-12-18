@@ -168,13 +168,13 @@ class Robot():
 
         if type == "leader":
             x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 3, 4, alpha=20)
+            field, dx, dy = virtual_leader(x, y, 3, 4, alpha=10)
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
                 l_x, l_y, _ = n_pos - r_pos
                 dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=5, d_0=1)
+                u = potential_field_1d_force(dis, alpha=10, d_0=1)
 
                 _dx = u * math.fabs(l_x/dis) * positivity(l_x)
                 _dy = u * math.fabs(l_y/dis) * positivity(l_y)
@@ -189,7 +189,7 @@ class Robot():
                 n_pos = msg[1]
                 l_x, l_y, _ = n_pos - r_pos
                 dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=10, d_0=0.8)
+                u = potential_field_1d_force(dis, alpha=10)
 
                 _dx = u * math.fabs(l_x/dis) * positivity(l_x)
                 _dy = u * math.fabs(l_y/dis) * positivity(l_y)
@@ -199,33 +199,119 @@ class Robot():
             self.init_check = True
         elif type == "push purple":
             x, y, z = r_pos
-            cx = 0
-            cy = 0
+
+            if self.init_push:
+                self.des_xs = np.zeros(6)
+                self.des_ys = np.zeros(6)
+
+                self.des_xs[self.id] = x
+                self.des_ys[self.id] = y
+
+                for msg in msgs:
+                    n_id = msg[0]
+                    n_pos = msg[1]
+                    self.des_xs[n_id] = n_pos[0]
+                    self.des_ys[n_id] = n_pos[1]
+
+                self.cx = np.mean(self.des_xs)
+                self.cy = np.mean(self.des_ys)
+                self.init_push = False
+
+            xs = np.zeros(6)
+            ys = np.zeros(6)
+            xs[self.id] = x
+            ys[self.id] = y
 
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
-                cx += n_pos[0]*1/6
-                cy += n_pos[1]*1/6
-            cx += x/6
-            cy += y/6
-            dx = 3 * (2.5 - cx)
-            dy = 3 * (5.5 - cy)
+                xs[n_id] = n_pos[0]
+                ys[n_id] = n_pos[1]
+
+                des_x = self.des_xs[self.id] - self.des_xs[n_id]
+                des_y = self.des_ys[self.id] - self.des_ys[n_id]
+                l_x, l_y, _ = r_pos - n_pos
+
+                x_r, y_r, _ = r_pos
+                x_n, y_n, _ = n_pos
+                dx = dx - self.square_formation_control(des_x, l_x, x_r, x_n)
+                dy = dy - self.square_formation_control(des_y, l_y, y_r, y_n)
+
+                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
+                u = potential_field_1d_force(dis, alpha=1, d_0=1)
+
+                _dx = u * math.fabs(l_x/dis) * positivity(-l_x)
+                _dy = u * math.fabs(l_y/dis) * positivity(-l_y)
+
+                dx += _dx
+                dy += _dy
+            self.cx = np.mean(xs)
+            self.cy = np.mean(ys)
+
+            K = 3
+            fx = K * (2.5 - self.cx)
+            fy = K * (5.5 - self.cy)
+
+            dx += fx
+            dy += fy
 
         elif type == "push red":
             x, y, z = r_pos
-            cx = 0
-            cy = 0
+
+            if self.init_push:
+                self.des_xs = np.zeros(6)
+                self.des_ys = np.zeros(6)
+
+                self.des_xs[self.id] = x
+                self.des_ys[self.id] = y
+
+                for msg in msgs:
+                    n_id = msg[0]
+                    n_pos = msg[1]
+                    self.des_xs[n_id] = n_pos[0]
+                    self.des_ys[n_id] = n_pos[1]
+
+                self.cx = np.mean(self.des_xs)
+                self.cy = np.mean(self.des_ys)
+                self.init_push = False
+
+            xs = np.zeros(6)
+            ys = np.zeros(6)
+            xs[self.id] = x
+            ys[self.id] = y
 
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
-                cx += n_pos[0]*1/6
-                cy += n_pos[1]*1/6
-            cx += x/6
-            cy += y/6
-            dx = 3 * (0.5 - cx)
-            dy = 3 * (5.5 - cy)
+                xs[n_id] = n_pos[0]
+                ys[n_id] = n_pos[1]
+
+                des_x = self.des_xs[self.id] - self.des_xs[n_id]
+                des_y = self.des_ys[self.id] - self.des_ys[n_id]
+                l_x, l_y, _ = r_pos - n_pos
+
+                x_r, y_r, _ = r_pos
+                x_n, y_n, _ = n_pos
+                dx = dx - self.square_formation_control(des_x, l_x, x_r, x_n)
+                dy = dy - self.square_formation_control(des_y, l_y, y_r, y_n)
+
+                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
+                u = potential_field_1d_force(dis, alpha=1, d_0=1)
+
+                _dx = u * math.fabs(l_x/dis) * positivity(-l_x)
+                _dy = u * math.fabs(l_y/dis) * positivity(-l_y)
+
+                dx += _dx
+                dy += _dy
+            self.cx = np.mean(xs)
+            self.cy = np.mean(ys)
+
+            K = 3
+            fx = K * (0.5 - self.cx)
+            fy = K * (5.5 - self.cy)
+
+            dx += fx
+            dy += fy
 
         elif type == "red":
             x, y, z = r_pos
@@ -239,13 +325,14 @@ class Robot():
                 n_pos = msg[1]
                 l_x, l_y, _ = n_pos - r_pos
                 dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=10, d_0=1)
+                u = potential_field_1d_force(dis, alpha=10)
 
                 _dx = u * math.fabs(l_x/dis) * positivity(l_x)
                 _dy = u * math.fabs(l_y/dis) * positivity(l_y)
 
                 dx += _dx
                 dy += _dy
+            self.init_push = True
 
         elif type == "big circle":
             x, y, z = r_pos
@@ -315,14 +402,6 @@ class Robot():
 
                 dx += _dx
                 dy += _dy
-                # dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                # if dis <= 0.4:
-                #     nxt_x = x_r + dx * 1./250.
-                #     nxt_y = y_r + dy * 1./250.
-                #     nxt_l_x = nxt_x - n_pos[0]
-                #     nxt_l_y = nxt_y - n_pos[1]
-                #     if math.sqrt(math.pow(nxt_l_x, 2) + math.pow(nxt_l_y, 2)) < 0.3:
-                #         collision = True
 
         lim = 50
         # Clip velocity
