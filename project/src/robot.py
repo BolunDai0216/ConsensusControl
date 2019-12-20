@@ -5,6 +5,7 @@ from pdb import set_trace
 import math
 from utils import potential_room
 from utils import virtual_leader
+from utils import virtual_leader2
 from utils import positivity
 from utils import potential_field_1d_force
 from utils import virtual_obstacle
@@ -119,6 +120,12 @@ class Robot():
                 dx, dy = self.formation(messages, pos, type="circle")
             elif type == "l":
                 dx, dy = self.formation(messages, pos, type="leader")
+            elif type == "e":
+                dx, dy = self.formation(messages, pos, type="leader2")
+            elif type == "a":
+                dx, dy = self.formation(messages, pos, type="leader3")
+            elif type == "u":
+                dx, dy = self.formation(messages, pos, type="leader4")
             elif type == "p":
                 dx, dy = self.formation(messages, pos, type="purple")
             elif type == "k":
@@ -131,8 +138,6 @@ class Robot():
                 dx, dy = self.formation(messages, pos, type="push red")
             elif type == "o":
                 dx, dy = self.formation(messages, pos, type="big circle o")
-            elif type == "e":
-                dx, dy = self.formation(messages, pos, type="leader2")
             elif type == "d":
                 dx, dy = self.formation(messages, pos, type="diamond")
 
@@ -168,7 +173,7 @@ class Robot():
 
         if type == "leader":
             x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 3, 4, alpha=10)
+            field, dx, dy = virtual_leader(x, y, 3, 4, alpha=30)
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
@@ -181,6 +186,55 @@ class Robot():
 
                 dx += _dx
                 dy += _dy
+
+        elif type == "leader2":
+            x, y, z = r_pos
+            field, dx, dy = virtual_leader2(x, y, 2, 0, alpha=30)
+            for msg in msgs:
+                n_id = msg[0]
+                n_pos = msg[1]
+                l_x, l_y, _ = n_pos - r_pos
+                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
+                u = potential_field_1d_force(dis, alpha=3, d_0=1)
+
+                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
+                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
+
+                dx += _dx
+                dy += _dy
+
+        elif type == "leader3":
+            x, y, z = r_pos
+            field, dx, dy = virtual_leader(x, y, 2, 3.5, alpha=60)
+            for msg in msgs:
+                n_id = msg[0]
+                n_pos = msg[1]
+                l_x, l_y, _ = n_pos - r_pos
+                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
+                u = potential_field_1d_force(dis, alpha=10, d_0=1)
+
+                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
+                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
+
+                dx += _dx
+                dy += _dy
+
+        elif type == "leader4":
+            x, y, z = r_pos
+            field, dx, dy = virtual_leader(x, y, 1.5, 0, alpha=60)
+            for msg in msgs:
+                n_id = msg[0]
+                n_pos = msg[1]
+                l_x, l_y, _ = n_pos - r_pos
+                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
+                u = potential_field_1d_force(dis, alpha=10, d_0=1)
+
+                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
+                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
+
+                dx += _dx
+                dy += _dy
+
         elif type == "purple":
             x, y, z = r_pos
             field, dx, dy = virtual_leader(x, y, self.purple_x, self.purple_y, alpha=60)
@@ -336,7 +390,7 @@ class Robot():
 
         elif type == "big circle":
             x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 2.5, 5.5, alpha=60, d_0=1)
+            field, dx, dy = virtual_leader(x, y, 2.5, 5.5, alpha=60, d_0=1.5)
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
@@ -351,28 +405,13 @@ class Robot():
                 dy += _dy
         elif type == "big circle o":
             x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 0.5, 5.5, alpha=60, d_0=1)
+            field, dx, dy = virtual_leader(x, y, 0.5, 5.5, alpha=60, d_0=0.8)
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
                 l_x, l_y, _ = n_pos - r_pos
                 dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
                 u = potential_field_1d_force(dis, alpha=3, d_0=0.7)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
-
-                dx += _dx
-                dy += _dy
-        elif type == "leader2":
-            x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 2, 0, alpha=40)
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-                l_x, l_y, _ = n_pos - r_pos
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=5, d_0=1)
 
                 _dx = u * math.fabs(l_x/dis) * positivity(l_x)
                 _dy = u * math.fabs(l_y/dis) * positivity(l_y)

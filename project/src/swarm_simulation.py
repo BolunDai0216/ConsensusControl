@@ -113,6 +113,12 @@ class World():
                 elif keyboard.is_pressed('e'):
                     print('Virtual Leader 2')
                     self.type = "e"
+                elif keyboard.is_pressed('a'):
+                    print('Virtual Leader 3')
+                    self.type = "a"
+                elif keyboard.is_pressed('u'):
+                    print('Virtual Leader 4')
+                    self.type = "u"
                 elif keyboard.is_pressed('p'):
                     print('Purple')
                     self.type = "p"

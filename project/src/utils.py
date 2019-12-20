@@ -40,13 +40,6 @@ def potential_field_1d(x, d_0=1, alpha=0.2, d_1=1.8, d_2=0.01):
     d_1 = d_1
     d_2 = d_2
 
-    # if x <= d_2:
-    #     V = alpha * d_0 / d_2
-    # elif x > d_2 and x <= d_1:
-    #     V = alpha * d_0 / x
-    # else:
-    #     V = alpha * d_0 / d_1
-
     if x < 0.4:
         V = 3
     else:
@@ -101,11 +94,11 @@ def potential_field_wall(x, y, Wall):
         d_den = math.sqrt(t_den)
         d = d_num/d_den
         if Wall.orientation == 1:  # Veritcal Wall
-            dx = 1
+            dx = 0
             dy = potential_field_1d(d) * positivity(y - Wall.p1[1])
         elif Wall.orientation == 0:  # Horizontal Wall
             dx = potential_field_1d(d) * positivity(x - Wall.p1[0])
-            dy = 1
+            dy = 0
     else:
         d1 = math.pow((Wall.p2[0] - x), 2) + math.pow(Wall.p2[1] - y, 2)
         d2 = math.pow(Wall.p1[0] - x, 2) + math.pow(Wall.p1[1] - y, 2)
@@ -147,6 +140,28 @@ def potential_room(x, y):
     return field, dx, dy
 
 
+def potential_room2(x, y):
+    wall1 = Wall(0.5, 2, (0, 0))
+    wall2 = Wall(0.5, 5, (3, 0))
+    wall3 = Wall(1, 0.5, (2, -2))
+    wall4 = Wall(1, 0.5, (1, 2))
+    walls = [wall1, wall2, wall3, wall4]
+    field = 0
+    dx = 0
+    dy = 0
+
+    for w in walls:
+        _field, _dx, _dy, _d = potential_field_wall(x, y, w)
+        field += _field
+        dx += _dx
+        dy += _dy
+
+    if field > 10:
+        field = 10
+
+    return field, dx, dy
+
+
 def virtual_leader(x, y, l_x, l_y, alpha=10, d_0=0.4):
     # negative field values pushes the agent away and positive field values
     # attracts the agent
@@ -159,7 +174,22 @@ def virtual_leader(x, y, l_x, l_y, alpha=10, d_0=0.4):
     dy = field * math.fabs(dis_y/dis) * positivity(l_y - y)
     _, _dx, _dy = potential_room(x, y)
 
-    return field, dx+7*_dx, dy+7*_dy
+    return field, dx+8*_dx, dy+8*_dy
+
+
+def virtual_leader2(x, y, l_x, l_y, alpha=10, d_0=0.4):
+    # negative field values pushes the agent away and positive field values
+    # attracts the agent
+    dis_x = l_x - x
+    dis_y = l_y - y
+    dis = math.sqrt(math.pow(dis_x, 2) + math.pow(dis_y, 2))
+    field = potential_field_1d_force(dis, alpha=alpha, d_0=d_0)
+
+    dx = field * math.fabs(dis_x/dis) * positivity(l_x - x)
+    dy = field * math.fabs(dis_y/dis) * positivity(l_y - y)
+    _, _dx, _dy = potential_room2(x, y)
+
+    return field, dx+8*_dx, dy+8*_dy
 
 
 def virtual_obstacle(x, y, l_x, l_y):
