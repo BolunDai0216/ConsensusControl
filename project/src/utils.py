@@ -80,7 +80,7 @@ def positivity(x):
         return -1
 
 
-def potential_field_wall(x, y, Wall):
+def potential_field_wall(x, y, Wall, alpha=0):
     t_num = (Wall.p1[0] - x)*(Wall.p2[0] - Wall.p1[0]) + \
         (Wall.p1[1] - y)*(Wall.p2[1] - Wall.p1[1])
     t_den = math.pow(Wall.p2[0] - Wall.p1[0], 2) + \
@@ -94,11 +94,11 @@ def potential_field_wall(x, y, Wall):
         d_den = math.sqrt(t_den)
         d = d_num/d_den
         if Wall.orientation == 1:  # Veritcal Wall
-            dx = 0
+            dx = alpha
             dy = potential_field_1d(d) * positivity(y - Wall.p1[1])
         elif Wall.orientation == 0:  # Horizontal Wall
             dx = potential_field_1d(d) * positivity(x - Wall.p1[0])
-            dy = 0
+            dy = alpha
     else:
         d1 = math.pow((Wall.p2[0] - x), 2) + math.pow(Wall.p2[1] - y, 2)
         d2 = math.pow(Wall.p1[0] - x, 2) + math.pow(Wall.p1[1] - y, 2)
@@ -114,7 +114,7 @@ def potential_field_wall(x, y, Wall):
     return potential_field_1d(d), dx, dy, d
 
 
-def potential_room(x, y):
+def potential_room(x, y, alpha=0):
     wall1 = Wall(0.5, 2, (0, 0))
     # print('wall1: ', wall1.orientation)
     wall2 = Wall(0.5, 2, (3, 0))
@@ -129,7 +129,7 @@ def potential_room(x, y):
     dy = 0
 
     for w in walls:
-        _field, _dx, _dy, _d = potential_field_wall(x, y, w)
+        _field, _dx, _dy, _d = potential_field_wall(x, y, w, alpha)
         field += _field
         dx += _dx
         dy += _dy
@@ -162,7 +162,7 @@ def potential_room2(x, y):
     return field, dx, dy
 
 
-def virtual_leader(x, y, l_x, l_y, alpha=10, d_0=0.4):
+def virtual_leader(x, y, l_x, l_y, alpha=10, d_0=0.4, room_alpha=0):
     # negative field values pushes the agent away and positive field values
     # attracts the agent
     dis_x = l_x - x
@@ -172,7 +172,7 @@ def virtual_leader(x, y, l_x, l_y, alpha=10, d_0=0.4):
 
     dx = field * math.fabs(dis_x/dis) * positivity(l_x - x)
     dy = field * math.fabs(dis_y/dis) * positivity(l_y - y)
-    _, _dx, _dy = potential_room(x, y)
+    _, _dx, _dy = potential_room(x, y, room_alpha)
 
     return field, dx+8*_dx, dy+8*_dy
 

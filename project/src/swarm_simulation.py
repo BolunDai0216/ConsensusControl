@@ -101,43 +101,43 @@ class World():
         # update the controllers
         if self.time > 1.0:
             for r in self.robots:
-                if keyboard.is_pressed('c'):
-                    print('Circular Formation')
-                    self.type = "c"
-                elif keyboard.is_pressed('s'):
+                if self.time < 5:
                     print('Square Formation')
                     self.type = "s"
-                elif keyboard.is_pressed('l'):
+                elif (self.time >= 5 and self.time < 30):
                     print('Virtual Leader')
                     self.type = "l"
-                elif keyboard.is_pressed('e'):
-                    print('Virtual Leader 2')
-                    self.type = "e"
-                elif keyboard.is_pressed('a'):
-                    print('Virtual Leader 3')
-                    self.type = "a"
-                elif keyboard.is_pressed('u'):
-                    print('Virtual Leader 4')
-                    self.type = "u"
-                elif keyboard.is_pressed('p'):
+                elif (self.time >= 30 and self.time < 65):
+                    print('Circular Formation')
+                    self.type = "c"
+                elif (self.time >= 65 and self.time < 75):
                     print('Purple')
                     self.type = "p"
-                elif keyboard.is_pressed('k'):
+                elif (self.time >= 75 and self.time < 115):
                     print('Push Purple')
                     self.type = "k"
-                elif keyboard.is_pressed('r'):
-                    print('Red')
-                    self.type = "r"
-                elif keyboard.is_pressed('b'):
+                elif keyboard.is_pressed('b') or (self.time >= 115 and self.time < 130):
                     print('Big Circle')
                     self.type = "b"
-                elif keyboard.is_pressed('t'):
+                elif (self.time >= 130 and self.time < 155):
+                    print('Red')
+                    self.type = "r"
+                elif (self.time >= 155 and self.time < 205):
                     print('Push Red')
                     self.type = "t"
-                elif keyboard.is_pressed('o'):
+                elif keyboard.is_pressed('o') or (self.time >= 205 and self.time < 220):
                     print('Big circle')
                     self.type = "o"
-                elif keyboard.is_pressed('d'):
+                elif (self.time >= 220 and self.time < 230):
+                    print('Virtual Leader 3')
+                    self.type = "a"
+                elif (self.time >= 230 and self.time < 270):
+                    print('Virtual Leader 2')
+                    self.type = "e"
+                elif (self.time >= 270 and self.time < 290):
+                    print('Virtual Leader 4')
+                    self.type = "u"
+                elif self.time >= 290:
                     print('Diamond')
                     self.type = "d"
                 dx, dy = r.compute_controller(self.type)

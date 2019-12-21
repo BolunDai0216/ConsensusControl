@@ -1,14 +1,13 @@
 import numpy as np
 import pybullet as p
-import itertools
-from pdb import set_trace
 import math
-from utils import potential_room
 from utils import virtual_leader
 from utils import virtual_leader2
 from utils import positivity
 from utils import potential_field_1d_force
 from utils import virtual_obstacle
+from numpy import linalg as LA
+import time
 
 
 class Robot():
@@ -34,6 +33,7 @@ class Robot():
         self.init_push = True
         self.des_xs = [0, 0, 0, 0, 0, 0, 0]
         self.des_ys = [0, 0, 0, 0, 0, 0, 0]
+        self.init_time = time.time()
         # No friction between bbody and surface.
         p.changeDynamics(self.pybullet_id, -1, lateralFriction=5., rollingFriction=0.)
 
@@ -111,7 +111,7 @@ class Robot():
         dy = 0.
         if messages:
             # messages = [msg1, msg2, msg3]
-            # msg = [id, array([x, y, z]) ]
+            # msg = [id, array([x, y, z])]
 
             # Type defaults to s
             if type == "s":
@@ -158,13 +158,13 @@ class Robot():
         collision = False
         # Square Formation
         if type == "square":
-            des_coord = np.array([[0, -0.5], [0, 0], [0, 0.5],
-                                  [1, -0.5], [1, 0], [1, 0.5]])
+            des_coord = 2*np.array([[0, -0.25], [0, 0], [0, 0.25],
+                                    [0.5, -0.25], [0.5, 0], [0.5, 0.25]])
 
         # Circle Formation
         if type == "circle":
-            des_coord = np.array([[-0.25, -math.sqrt(3)/4], [-0.5, 0], [-0.25, math.sqrt(3)/4],
-                                  [0.25, -math.sqrt(3)/4], [0.5, 0], [0.25, math.sqrt(3)/4]])
+            des_coord = 2*np.array([[-0.125, -math.sqrt(3)/8], [-0.25, 0], [-0.125, math.sqrt(3)/8],
+                                    [0.125, -math.sqrt(3)/8], [0.25, 0], [0.125, math.sqrt(3)/8]])
 
         # Circle Formation
         if type == "diamond":
@@ -186,7 +186,6 @@ class Robot():
 
                 dx += _dx
                 dy += _dy
-
         elif type == "leader2":
             x, y, z = r_pos
             field, dx, dy = virtual_leader2(x, y, 2, 0, alpha=30)
@@ -202,7 +201,6 @@ class Robot():
 
                 dx += _dx
                 dy += _dy
-
         elif type == "leader3":
             x, y, z = r_pos
             field, dx, dy = virtual_leader(x, y, 2, 3.5, alpha=60)
@@ -218,7 +216,6 @@ class Robot():
 
                 dx += _dx
                 dy += _dy
-
         elif type == "leader4":
             x, y, z = r_pos
             field, dx, dy = virtual_leader(x, y, 1.5, 0, alpha=60)
@@ -234,7 +231,6 @@ class Robot():
 
                 dx += _dx
                 dy += _dy
-
         elif type == "purple":
             x, y, z = r_pos
             field, dx, dy = virtual_leader(x, y, self.purple_x, self.purple_y, alpha=60)
@@ -308,7 +304,6 @@ class Robot():
 
             dx += fx
             dy += fy
-
         elif type == "push red":
             x, y, z = r_pos
 
@@ -366,10 +361,9 @@ class Robot():
 
             dx += fx
             dy += fy
-
         elif type == "red":
             x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, self.red_x, self.red_y, alpha=60)
+            field, dx, dy = virtual_leader(x, y, self.red_x, self.red_y, alpha=60, room_alpha=1)
             field, _dx, _dy = virtual_obstacle(x, y, self.purple_x, self.purple_y)
             dx += _dx
             dy += _dy
@@ -387,10 +381,9 @@ class Robot():
                 dx += _dx
                 dy += _dy
             self.init_push = True
-
         elif type == "big circle":
             x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 2.5, 5.5, alpha=60, d_0=1.5)
+            field, dx, dy = virtual_leader(x, y, 2.5, 5.5, alpha=60, d_0=1.5, room_alpha=1)
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
@@ -405,7 +398,7 @@ class Robot():
                 dy += _dy
         elif type == "big circle o":
             x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 0.5, 5.5, alpha=60, d_0=0.8)
+            field, dx, dy = virtual_leader(x, y, 0.5, 5.5, alpha=60, d_0=0.8, room_alpha=1)
             for msg in msgs:
                 n_id = msg[0]
                 n_pos = msg[1]
@@ -427,14 +420,13 @@ class Robot():
 
                 des_x, des_y = des_coord[self.id] - des_coord[n_id]
                 l_x, l_y, _ = r_pos - n_pos
-
                 x_r, y_r, _ = r_pos
                 x_n, y_n, _ = n_pos
                 dx = dx - self.square_formation_control(des_x, l_x, x_r, x_n)
                 dy = dy - self.square_formation_control(des_y, l_y, y_r, y_n)
 
                 dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=5, d_0=1)
+                u = potential_field_1d_force(dis, alpha=5, d_0=0.8)
 
                 _dx = u * math.fabs(l_x/dis) * positivity(-l_x)
                 _dy = u * math.fabs(l_y/dis) * positivity(-l_y)
