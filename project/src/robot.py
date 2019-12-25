@@ -1,13 +1,6 @@
 import numpy as np
 import pybullet as p
-import math
-from utils import virtual_leader
-from utils import virtual_leader2
-from utils import positivity
-from utils import potential_field_1d_force
-from utils import virtual_obstacle
-from numpy import linalg as LA
-import time
+import controller
 
 
 class Robot():
@@ -28,12 +21,9 @@ class Robot():
         self.red_x = 4
         self.red_y = 2
 
-        self.switch = True
-        self.init_check = False
         self.init_push = True
         self.des_xs = [0, 0, 0, 0, 0, 0, 0]
         self.des_ys = [0, 0, 0, 0, 0, 0, 0]
-        self.init_time = time.time()
         # No friction between bbody and surface.
         p.changeDynamics(self.pybullet_id, -1, lateralFriction=5., rollingFriction=0.)
 
@@ -87,7 +77,7 @@ class Robot():
         """
         return self.neighbors
 
-    def compute_controller(self, type="s"):
+    def compute_controller(self, time):
         """
         function that will be called each control cycle which implements the control law
         TO BE MODIFIED
@@ -110,36 +100,79 @@ class Robot():
         dx = 0.
         dy = 0.
         if messages:
-            # messages = [msg1, msg2, msg3]
-            # msg = [id, array([x, y, z])]
 
-            # Type defaults to s
-            if type == "s":
-                dx, dy = self.formation(messages, pos, type="square")
-            elif type == "c":
-                dx, dy = self.formation(messages, pos, type="circle")
-            elif type == "l":
-                dx, dy = self.formation(messages, pos, type="leader")
-            elif type == "e":
-                dx, dy = self.formation(messages, pos, type="leader2")
-            elif type == "a":
-                dx, dy = self.formation(messages, pos, type="leader3")
-            elif type == "u":
-                dx, dy = self.formation(messages, pos, type="leader4")
-            elif type == "p":
-                dx, dy = self.formation(messages, pos, type="purple")
-            elif type == "k":
-                dx, dy = self.formation(messages, pos, type="push purple")
-            elif type == "b":
-                dx, dy = self.formation(messages, pos, type="big circle")
-            elif type == "r":
-                dx, dy = self.formation(messages, pos, type="red")
-            elif type == "t":
-                dx, dy = self.formation(messages, pos, type="push red")
-            elif type == "o":
-                dx, dy = self.formation(messages, pos, type="big circle o")
-            elif type == "d":
-                dx, dy = self.formation(messages, pos, type="diamond")
+            if time < 5:
+                # square Formation
+                dx, dy = controller.formation_control("square", messages, self.id, pos)
+
+            elif time >= 5 and time < 30:
+                # move out of room
+                dx, dy = controller.follow_leader(3, 4, pos, messages,
+                                                  leader_alpha=30)
+
+            elif time >= 30 and time < 65:
+                # circle formation
+                dx, dy = controller.formation_control("circle", messages, self.id, pos)
+
+            elif time >= 65 and time < 75:
+                # surround purple ball
+                dx, dy = controller.go_to_leader(self.purple_x, self.purple_y, pos,
+                                                 messages, 0, 0)
+                self.init_push = True
+
+            elif time >= 75 and time < 115:
+                # push purple ball
+                if self.init_push:
+                    output = controller.get_current_formation(messages, self.id, pos)
+                    self.des_xs, self.des_ys, self.cx, self.cy = output
+                    self.init_push = False
+
+                dx, dy, self.cx, self.cy = controller.push_ball(
+                    messages, self.id, pos, self.des_xs, self.des_ys,
+                    self.cx, self.cy, 2.5, 5.5, K=3)
+
+            elif time >= 115 and time < 130:
+                # eject from purple ball
+                dx, dy = controller.eject_from_ball(2.5, 5.5, messages, pos, d_0=1.5)
+
+            elif time >= 130 and time < 155:
+                # surround red ball
+                dx, dy = controller.go_to_leader(self.red_x, self.red_y, pos,
+                                                 messages,
+                                                 self.purple_x, self.purple_y,
+                                                 obstacle=True, room_alpha=1)
+                self.init_push = True
+
+            elif time >= 155 and time < 205:
+                # push red ball
+                if self.init_push:
+                    output = controller.get_current_formation(messages, self.id, pos)
+                    self.des_xs, self.des_ys, self.cx, self.cy = output
+                    self.init_push = False
+
+                dx, dy, self.cx, self.cy = controller.push_ball(
+                    messages, self.id, pos, self.des_xs, self.des_ys,
+                    self.cx, self.cy, 0.5, 5.5, K=3)
+
+            elif time >= 205 and time < 220:
+                # eject from red ball
+                dx, dy = controller.eject_from_ball(0.5, 5.5, messages, pos)
+
+            elif time >= 220 and time < 230:
+                # return to room step 1
+                dx, dy = controller.follow_leader(2, 3.5, pos, messages)
+
+            elif time >= 230 and time < 270:
+                # return to room step 2
+                dx, dy = controller.follow_leader(2, 0, pos, messages,
+                                                  leader_alpha=30, agent_alpha=3)
+            elif time >= 270 and time < 290:
+                # return to room step 3
+                dx, dy = controller.follow_leader(1.5, 0, pos, messages)
+
+            elif time >= 290:
+                # diamond formation
+                dx, dy = controller.formation_control("diamond", messages, self.id, pos)
 
             # compute velocity change for the wheels
             vel_norm = np.linalg.norm([dx, dy])  # norm of desired velocity
@@ -151,304 +184,3 @@ class Robot():
             self.set_wheel_velocity([left_wheel, right_wheel])
 
         return dx, dy
-
-    def formation(self, msgs, r_pos, type="square"):
-        dx = 0
-        dy = 0
-        collision = False
-        # Square Formation
-        if type == "square":
-            des_coord = 2*np.array([[0, -0.25], [0, 0], [0, 0.25],
-                                    [0.5, -0.25], [0.5, 0], [0.5, 0.25]])
-
-        # Circle Formation
-        if type == "circle":
-            des_coord = 2*np.array([[-0.125, -math.sqrt(3)/8], [-0.25, 0], [-0.125, math.sqrt(3)/8],
-                                    [0.125, -math.sqrt(3)/8], [0.25, 0], [0.125, math.sqrt(3)/8]])
-
-        # Circle Formation
-        if type == "diamond":
-            des_coord = np.array([[0, 0], [2/3, 0], [4/3, 0],
-                                  [2, 0], [1, 1], [1, -1]])
-
-        if type == "leader":
-            x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 3, 4, alpha=30)
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-                l_x, l_y, _ = n_pos - r_pos
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=10, d_0=1)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
-
-                dx += _dx
-                dy += _dy
-        elif type == "leader2":
-            x, y, z = r_pos
-            field, dx, dy = virtual_leader2(x, y, 2, 0, alpha=30)
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-                l_x, l_y, _ = n_pos - r_pos
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=3, d_0=1)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
-
-                dx += _dx
-                dy += _dy
-        elif type == "leader3":
-            x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 2, 3.5, alpha=60)
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-                l_x, l_y, _ = n_pos - r_pos
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=10, d_0=1)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
-
-                dx += _dx
-                dy += _dy
-        elif type == "leader4":
-            x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 1.5, 0, alpha=60)
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-                l_x, l_y, _ = n_pos - r_pos
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=10, d_0=1)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
-
-                dx += _dx
-                dy += _dy
-        elif type == "purple":
-            x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, self.purple_x, self.purple_y, alpha=60)
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-                l_x, l_y, _ = n_pos - r_pos
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=10)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
-
-                dx += _dx
-                dy += _dy
-            self.init_check = True
-        elif type == "push purple":
-            x, y, z = r_pos
-
-            if self.init_push:
-                self.des_xs = np.zeros(6)
-                self.des_ys = np.zeros(6)
-
-                self.des_xs[self.id] = x
-                self.des_ys[self.id] = y
-
-                for msg in msgs:
-                    n_id = msg[0]
-                    n_pos = msg[1]
-                    self.des_xs[n_id] = n_pos[0]
-                    self.des_ys[n_id] = n_pos[1]
-
-                self.cx = np.mean(self.des_xs)
-                self.cy = np.mean(self.des_ys)
-                self.init_push = False
-
-            xs = np.zeros(6)
-            ys = np.zeros(6)
-            xs[self.id] = x
-            ys[self.id] = y
-
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-                xs[n_id] = n_pos[0]
-                ys[n_id] = n_pos[1]
-
-                des_x = self.des_xs[self.id] - self.des_xs[n_id]
-                des_y = self.des_ys[self.id] - self.des_ys[n_id]
-                l_x, l_y, _ = r_pos - n_pos
-
-                x_r, y_r, _ = r_pos
-                x_n, y_n, _ = n_pos
-                dx = dx - self.square_formation_control(des_x, l_x, x_r, x_n)
-                dy = dy - self.square_formation_control(des_y, l_y, y_r, y_n)
-
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=1, d_0=1)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(-l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(-l_y)
-
-                dx += _dx
-                dy += _dy
-            self.cx = np.mean(xs)
-            self.cy = np.mean(ys)
-
-            K = 3
-            fx = K * (2.5 - self.cx)
-            fy = K * (5.5 - self.cy)
-
-            dx += fx
-            dy += fy
-        elif type == "push red":
-            x, y, z = r_pos
-
-            if self.init_push:
-                self.des_xs = np.zeros(6)
-                self.des_ys = np.zeros(6)
-
-                self.des_xs[self.id] = x
-                self.des_ys[self.id] = y
-
-                for msg in msgs:
-                    n_id = msg[0]
-                    n_pos = msg[1]
-                    self.des_xs[n_id] = n_pos[0]
-                    self.des_ys[n_id] = n_pos[1]
-
-                self.cx = np.mean(self.des_xs)
-                self.cy = np.mean(self.des_ys)
-                self.init_push = False
-
-            xs = np.zeros(6)
-            ys = np.zeros(6)
-            xs[self.id] = x
-            ys[self.id] = y
-
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-                xs[n_id] = n_pos[0]
-                ys[n_id] = n_pos[1]
-
-                des_x = self.des_xs[self.id] - self.des_xs[n_id]
-                des_y = self.des_ys[self.id] - self.des_ys[n_id]
-                l_x, l_y, _ = r_pos - n_pos
-
-                x_r, y_r, _ = r_pos
-                x_n, y_n, _ = n_pos
-                dx = dx - self.square_formation_control(des_x, l_x, x_r, x_n)
-                dy = dy - self.square_formation_control(des_y, l_y, y_r, y_n)
-
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=1, d_0=1)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(-l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(-l_y)
-
-                dx += _dx
-                dy += _dy
-            self.cx = np.mean(xs)
-            self.cy = np.mean(ys)
-
-            K = 3
-            fx = K * (0.5 - self.cx)
-            fy = K * (5.5 - self.cy)
-
-            dx += fx
-            dy += fy
-        elif type == "red":
-            x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, self.red_x, self.red_y, alpha=60, room_alpha=1)
-            field, _dx, _dy = virtual_obstacle(x, y, self.purple_x, self.purple_y)
-            dx += _dx
-            dy += _dy
-
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-                l_x, l_y, _ = n_pos - r_pos
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=10)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
-
-                dx += _dx
-                dy += _dy
-            self.init_push = True
-        elif type == "big circle":
-            x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 2.5, 5.5, alpha=60, d_0=1.5, room_alpha=1)
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-                l_x, l_y, _ = n_pos - r_pos
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=3, d_0=0.7)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
-
-                dx += _dx
-                dy += _dy
-        elif type == "big circle o":
-            x, y, z = r_pos
-            field, dx, dy = virtual_leader(x, y, 0.5, 5.5, alpha=60, d_0=0.8, room_alpha=1)
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-                l_x, l_y, _ = n_pos - r_pos
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=3, d_0=0.7)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(l_y)
-
-                dx += _dx
-                dy += _dy
-        else:
-            dx = 0
-            dy = 0
-            for msg in msgs:
-                n_id = msg[0]
-                n_pos = msg[1]
-
-                des_x, des_y = des_coord[self.id] - des_coord[n_id]
-                l_x, l_y, _ = r_pos - n_pos
-                x_r, y_r, _ = r_pos
-                x_n, y_n, _ = n_pos
-                dx = dx - self.square_formation_control(des_x, l_x, x_r, x_n)
-                dy = dy - self.square_formation_control(des_y, l_y, y_r, y_n)
-
-                dis = math.sqrt(math.pow(l_x, 2) + math.pow(l_y, 2))
-                u = potential_field_1d_force(dis, alpha=5, d_0=0.8)
-
-                _dx = u * math.fabs(l_x/dis) * positivity(-l_x)
-                _dy = u * math.fabs(l_y/dis) * positivity(-l_y)
-
-                dx += _dx
-                dy += _dy
-
-        lim = 50
-        # Clip velocity
-        dx = np.clip(dx, -lim, lim)
-        dy = np.clip(dy, -lim, lim)
-
-        if collision:
-            return 0.1*dx, 0.1*dx
-
-        return dx, dy
-
-    def square_formation_control(self, d, l, x_r, x_n):
-        delta = 2
-        nmrtr = 2*(delta - math.fabs(d)) - math.fabs(l-d)
-        dnmntr = delta - math.fabs(d) - math.fabs(l-d)
-        dnmntr = math.pow(dnmntr, 2)
-        alpha = x_r - x_n - d
-
-        return (nmrtr/dnmntr) * alpha

@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import math
-from pdb import set_trace
 
 
 class Wall():
@@ -26,12 +25,6 @@ class Wall():
             self.p1 = (self.cx, self.y_max)
             self.p2 = (self.cx, self.y_min)
             self.orientation = 0  # Horizontal
-
-
-def potential_field_2d(x, y):
-    dis = math.sqrt(math.pow(x, 2) + math.pow(y, 2))
-    V = potential_field_1d(dis)
-    return V
 
 
 def potential_field_1d(x, d_0=1, alpha=0.2, d_1=1.8, d_2=0.01):
@@ -140,28 +133,6 @@ def potential_room(x, y, alpha=0):
     return field, dx, dy
 
 
-def potential_room2(x, y):
-    wall1 = Wall(0.5, 2, (0, 0))
-    wall2 = Wall(0.5, 5, (3, 0))
-    wall3 = Wall(1, 0.5, (2, -2))
-    wall4 = Wall(1, 0.5, (1, 2))
-    walls = [wall1, wall2, wall3, wall4]
-    field = 0
-    dx = 0
-    dy = 0
-
-    for w in walls:
-        _field, _dx, _dy, _d = potential_field_wall(x, y, w)
-        field += _field
-        dx += _dx
-        dy += _dy
-
-    if field > 10:
-        field = 10
-
-    return field, dx, dy
-
-
 def virtual_leader(x, y, l_x, l_y, alpha=10, d_0=0.4, room_alpha=0):
     # negative field values pushes the agent away and positive field values
     # attracts the agent
@@ -173,21 +144,6 @@ def virtual_leader(x, y, l_x, l_y, alpha=10, d_0=0.4, room_alpha=0):
     dx = field * math.fabs(dis_x/dis) * positivity(l_x - x)
     dy = field * math.fabs(dis_y/dis) * positivity(l_y - y)
     _, _dx, _dy = potential_room(x, y, room_alpha)
-
-    return field, dx+8*_dx, dy+8*_dy
-
-
-def virtual_leader2(x, y, l_x, l_y, alpha=10, d_0=0.4):
-    # negative field values pushes the agent away and positive field values
-    # attracts the agent
-    dis_x = l_x - x
-    dis_y = l_y - y
-    dis = math.sqrt(math.pow(dis_x, 2) + math.pow(dis_y, 2))
-    field = potential_field_1d_force(dis, alpha=alpha, d_0=d_0)
-
-    dx = field * math.fabs(dis_x/dis) * positivity(l_x - x)
-    dy = field * math.fabs(dis_y/dis) * positivity(l_y - y)
-    _, _dx, _dy = potential_room2(x, y)
 
     return field, dx+8*_dx, dy+8*_dy
 
